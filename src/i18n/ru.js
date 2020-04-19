@@ -1,19 +1,23 @@
 ﻿export default {
 	language: 'Русский',
 	'$vuetify': {
+		badge: 'знак',
 		close: 'Закрыть',
 		dataIterator: {
 			noResultsText: 'Не найдено подходящих записей',
-			loadingText: 'Запись загружается...'
+			loadingText: 'Запись загружается...',
 		},
 		dataTable: {
 			itemsPerPageText: 'Строк на странице:',
 			ariaLabel: {
-				sortDescending: ': Упорядочено по нисходящей. Активируйте, чтобы убрать сортировку.',
-				sortAscending: ': Упорядочено во восходящей. Активируйте для упорядочивания по ниcходящей.',
-				sortNone: ': Не упорядочено. Активируйте для упорядочивания по восходящей.'
+				sortDescending: 'Упорядочено по убыванию.',
+				sortAscending: 'Упорядочено по возрастанию.',
+				sortNone: 'Не упорядочено.',
+				activateNone: 'Активируйте, чтобы убрать сортировку.',
+				activateDescending: 'Активируйте для упорядочивания убыванию.',
+				activateAscending: 'Активируйте для упорядочивания по возрастанию.Activate to sort ascending.',
 			},
-			sortBy: 'Сортировать по'
+			sortBy: 'Сортировать по',
 		},
 		dataFooter: {
 			itemsPerPageText: 'Записей на странице:',
@@ -22,27 +26,30 @@
 			prevPage: 'Предыдущая страница',
 			firstPage: 'Первая страница',
 			lastPage: 'Последняя страница',
-			pageText: '{0}-{1} из {2}'
+			pageText: '{0}-{1} из {2}',
 		},
 		datePicker: {
-			itemsSelected: '{0} выбран'
+			itemsSelected: '{0} выбран',
 		},
 		noDataText: 'Отсутствуют данные',
 		carousel: {
-			prev: 'Предыдущий визуальный',
-			next: 'Следующий визуальный'
+			prev: 'Предыдущий слайд',
+			next: 'Следующий слайд',
+			ariaLabel: {
+				delimiter: 'Слайд {0} из {1}',
+			},
 		},
 		calendar: {
-			moreEvents: 'Еще {0}'
+			moreEvents: 'Еще {0}',
 		},
 		fileInput: {
 			counter: 'Файлов: {0}',
-			counterSize: 'Файлов: {0} (всего {1})'
+			counterSize: 'Файлов: {0} (всего {1})',
 		},
 		timePicker: {
 			am: 'AM',
-			pm: 'PM'
-		}
+			pm: 'PM',
+		},
 	},
 	button: {
 		add: {
@@ -75,6 +82,10 @@
 		},
 		refresh: {
 			caption: 'Обновить'
+		},
+		reset: {
+			caption: 'Сброс машины',
+			title: 'Отправьте M999 на машину, чтобы перезагрузить его.'
 		},
 		upload: {
 			gcodes: {
@@ -438,10 +449,6 @@
 			successMulti: 'Скачано {0} файлов',
 			error: 'Неудачное скачивание {0}'
 		},
-		loadingFile: {
-			title: 'Загрузка файла...',
-			message: 'Этот файл относительно большой, поэтому для его отображения может потребоваться некоторое время.'
-		},
 		message: 'Сообщение',
 		mount: {
 			successTitle: 'SD карта примонтирована',
@@ -651,6 +658,7 @@
 			caption: 'Камера',
 			webcamURL: 'URL камеры (опционально)',
 			webcamUpdateInterval: 'Интервал обновления камеры ({0})',
+			webcamLiveURL: 'URL-адрес, который открывается при нажатии на изображение с веб-камеры (необязательно)',
 			webcamFix: 'Не добавлять доп. спецификатор HTTP при перезагрузке изображений',
 			webcamEmbedded: 'Вписать картинку с камеры в кадр',
 			webcamRotation: 'Поворот изображения',
@@ -675,10 +683,9 @@
 			topSpeed: 'Макс. скорость',
 			sensors: 'Сенсоры',
 			mcuTemp: 'Темп. MCU',
-			mcuTempTitle: 'Мин.: {0}, Макс.: {1}',
+			minMax: 'Мин.: {0}, Макс.: {1}',
 			vIn: 'Vin',
 			v12: 'V12',
-			minMax: 'Мин.: {0}, Макс.: {1}',
 			fanRPM: 'Скорость вентилятора',
 			probe: 'Z-датчик',
 			noStatus: 'Нет статуса'

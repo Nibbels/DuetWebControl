@@ -3,23 +3,26 @@
 import Vue from 'vue'
 
 import {
+	AnalogSensorType,
 	Compatibility,
 	DistanceUnit,
+	EndstopType,
 	FilamentMonitorType,
-	HeaterMonitorCondition,
+	HeaterMonitorAction, HeaterMonitorCondition,
 	HttpEndpointType,
 	InputChannelState,
 	KinematicsName,
 	MessageBoxMode,
 	NetworkInterfaceType,
-	ProbeType
+	ProbeType,
+	ToolState
 } from './modelEnums.js'
 import { quickPatch } from '../../utils/patch.js'
 
 export class AnalogSensor {
 	lastReading = null
 	name = ''
-	type = null
+	type = AnalogSensorType.unknown
 }
 
 export class Axis {
@@ -31,26 +34,33 @@ export class Axis {
 	homed = false
 	jerk = 15
 	letter = '\0'
-	machinePosition = 0
+	machinePosition = null
 	max = 200
 	maxProbed = false
 	min = 0
 	minProbed = false
 	speed = 100
-	userPosition = 0
+	userPosition = null
 	visible = true
 	workplaceOffsets = []
 }
 
+export class BeepRequest {
+	constructor(initData) { quickPatch(this, initData); }
+	duration = 0
+	frequency = 0
+}
+
 export class Board {
 	constructor(initData) { quickPatch(this, initData); }
+	bootloaderFileName = null
 	canAddress = null			// *** requires CAN support (TBD)
 	firmwareDate = ''
-	firmwareFileName = ''
+	firmwareFileName = null
 	firmwareName = ''
 	firmwareVersion = ''
 	iapFileNameSBC = null		// *** requires SBC support
-	iapFileNameSD = ''
+	iapFileNameSD = null		// *** requires SD support
 	maxHeaters = 0
 	maxMotors = 0
 	mcuTemp = {
@@ -73,25 +83,35 @@ export class Board {
 	}
 }
 
-export class BeepRequest {
+export class Build {
+	currentObject = -1
+	m486Names = false
+	m486Numbers = false
+	objects = []
+}
+
+export class BuildObject {
 	constructor(initData) { quickPatch(this, initData); }
-	duration = 0
-	frequency = 0
+	cancelled = false
+	name = null
+	x = []
+	y = []
 }
 
 export class Endstop {
 	constructor(initData) { quickPatch(this, initData); }
 	triggered = false
-	type = null
-	zProbeNumber = null			// *** missing in RRF
+	type = EndstopType.unknown
+	probeNumber = null			// *** missing in RRF
 }
 
 export class Extruder {
 	constructor(initData) { quickPatch(this, initData); }
 	acceleration = 500
 	current = 0
-	drives = []
+	driver = null
 	factor = 1.0
+	filament = ''
 	jerk = 15
 	nonlinear = {
 		a: 0,
@@ -108,27 +128,27 @@ export class Fan {
 	constructor(initData) { quickPatch(this, initData); }
 	actualValue = 0
 	blip = 0.1
+	frequency = 250
 	max = 1
 	min = 0.1
 	name = ''
 	requestedValue = 0
 	rpm = -1
 	thermostatic = {
-		control: false,
-		heaters: null,
+		heaters: [],
 		highTemperature: null,
 		lowTemperature: null
 	}
 }
 
-export class SimpleFilamentMonitor {
+export class FilamentMonitor {
 	constructor(initData) { quickPatch(this, initData); }
 	enabled = false
-	filamentPresent = false
-	type = FilamentMonitorType.simple
+	filamentPresent = null
+	type = FilamentMonitorType.unknown
 }
 
-export class LaserFilamentMonitor extends SimpleFilamentMonitor {
+export class LaserFilamentMonitor extends FilamentMonitor {
 	constructor(initData = {}) {
 		initData.type = FilamentMonitorType.laser;
 		super(initData);
@@ -147,7 +167,7 @@ export class LaserFilamentMonitor extends SimpleFilamentMonitor {
 	}
 }
 
-export class PulsedFilamentMonitor extends SimpleFilamentMonitor {
+export class PulsedFilamentMonitor extends FilamentMonitor {
 	constructor(initData = {}) {
 		initData.type = FilamentMonitorType.pulsed;
 		super(initData);
@@ -167,7 +187,7 @@ export class PulsedFilamentMonitor extends SimpleFilamentMonitor {
 	}
 }
 
-export class RotatingMagnetFilamentMonitor extends SimpleFilamentMonitor {
+export class RotatingMagnetFilamentMonitor extends FilamentMonitor {
 	constructor(initData = {}) {
 		initData.type = FilamentMonitorType.rotatingMagnet;
 		super(initData);
@@ -185,6 +205,12 @@ export class RotatingMagnetFilamentMonitor extends SimpleFilamentMonitor {
 		percentMin: 60,
 		sampleDistance: 3
 	}
+}
+
+export class GpInputPort {
+	constructor(initData) { quickPatch(this, initData); }
+	configured = false
+	value = null
 }
 
 export class Heater {
@@ -217,7 +243,7 @@ export class Heater {
 }
 
 export class HeaterMonitor {
-	action = null
+	action = HeaterMonitorAction.generateFault
 	condition = HeaterMonitorCondition.disabled
 	limit = null
 }
@@ -245,12 +271,6 @@ export class InputChannel {
 	volumetric = false
 }
 
-export class InputPort {
-	constructor(initData) { quickPatch(this, initData); }
-	configured = false
-	value = null
-}
-
 export class Kinematics {
 	constructor(initData) { quickPatch(this, initData); }
 	name = KinematicsName.unknown
@@ -270,20 +290,11 @@ export class CoreKinematics extends Kinematics {
 	]
 }
 
-export class HangprinterKinematics extends Kinematics {
-	constructor(initData) { super(initData); }
-	anchorA = [0, -2000, -100]
-	anchorB = [2000, 1000, -100]
-	anchorC = [-2000, 1000, -100]
-	anchorDz = 3000
-	printRadius = 1500
-}
-
 export class DeltaKinematics extends Kinematics {
 	constructor(initData) { super(initData); }
-	printRadius = 0
-	deltaRadius = 0
-	homedHeight = 0
+	deltaRadius = 105.6
+	homedHeight = 240
+	printRadius = 80
 	towers = [
 		new DeltaTower(),
 		new DeltaTower(),
@@ -291,6 +302,24 @@ export class DeltaKinematics extends Kinematics {
 	]
 	xTilt = 0
 	yTilt = 0
+}
+
+export class DeltaTower {
+	constructor(initData) { quickPatch(this, initData); }
+	angleCorrection = 0
+	diagonal = 0
+	endstopAdjustment = 0
+	xPos = 0
+	yPos = 0
+}
+
+export class HangprinterKinematics extends Kinematics {
+	constructor(initData) { super(initData); }
+	anchorA = [0, -2000, -100]
+	anchorB = [2000, 1000, -100]
+	anchorC = [-2000, 1000, -100]
+	anchorDz = 3000
+	printRadius = 1500
 }
 
 export class Layer {
@@ -301,12 +330,17 @@ export class Layer {
 	height = 0
 }
 
+export class MeshDeviation {
+	deviation = 0
+	mean = 0
+}
+
 export class MessageBox {
+	axisControls = 0
 	mode = MessageBoxMode.okOnly
-	title = ''
 	message = ''
-	axisControls = []
 	seq = -1
+	title = ''
 	timeout = 0
 }
 
@@ -320,10 +354,11 @@ export class NetworkInterface {
 	type = NetworkInterfaceType.wifi
 
 	// *** missing in RRF:
-	speed = null				// null if unknown and 0 if no link
-	signal = null				// only WiFi (dBm)
-	numReconnects = null
 	activeProtocols = []		// one or more of ['http', 'ftp', 'telnet']
+	configuredIP = null
+	numReconnects = null
+	signal = null				// only WiFi (dBm)
+	speed = null				// null if unknown and 0 if no link
 }
 
 export class ParsedFileInfo {
@@ -366,6 +401,17 @@ export class Probe {
 	value = [1000]
 }
 
+export class RestorePoint {
+	constructor(initData) { quickPatch(this, initData); }
+	coords = []
+	extruderPos = 0
+	feedRate = 50
+	ioBits = 0
+	laserPwm = null
+	spindleSpeeds = []
+	toolNumber = -1
+}
+
 export class Spindle {
 	constructor(initData) { quickPatch(this, initData); }
 	active = 0					// RPM
@@ -382,10 +428,11 @@ export class Tool {
 	axes = []					// may hold sub-arrays of drives per axis
 	extruders = []
 	fans = []
-	filament = ''
+	filamentExtruder = -1
 	heaters = []
 	mix = []
 	name = ''
+	number = 0
 	offsets = []				// offsets in the same order as the axes
 	offsetsProbed = 0			// bitmap of the probed axes
 	retraction = {
@@ -396,16 +443,7 @@ export class Tool {
 		zHop: 0
 	}
 	standby = []
-	state = 'off'
-}
-
-export class DeltaTower {
-	constructor(initData) { quickPatch(this, initData); }
-	angleCorrection = 0
-	diagonal = 0
-	endstopAdjustment = 0
-	xPos = 0
-	yPos = 0
+	state = ToolState.off
 }
 
 export class UserSession {		// *** missing in RRF
@@ -428,7 +466,7 @@ export class Volume {
 	capacity = null				// in Bytes
 	freeSpace = null			// in Bytes
 	mounted = false
-	name = null
+	name = null					// *** missing in RRF but reserved
 	openFiles = null
 	path = null
 	speed = null				// in Bytes/s
@@ -490,11 +528,21 @@ export function fixMachineItems(state, mergeData) {
 		fixItems(state.inputs, InputChannel);
 	}
 
+	if (mergeData.job && mergeData.job.build) {
+		fixObject(state.job.build, new Build());
+		if (mergeData.job.build && mergeData.job.build.objects) {
+			fixItems(state.job.build.objects, BuildObject);
+		}
+	}
+
 	// Layers are not verified for performance reasons
 
 	if (mergeData.move) {
 		if (mergeData.move.axes) {
 			fixItems(state.move.axes, Axis);
+		}
+		if (mergeData.move.compensation && mergeData.move.compensation.meshDeviation) {
+			fixObject(state.move.compensation.meshDeviation, new MeshDeviation());
 		}
 		if (mergeData.move.extruders) {
 			fixItems(state.move.extruders, Extruder);
@@ -509,6 +557,9 @@ export function fixMachineItems(state, mergeData) {
 	}
 
 	if (mergeData.sensors) {
+		if (mergeData.sensors.analog) {
+			fixItems(state.sensors.analog, AnalogSensor);
+		}
 		if (mergeData.sensors.endstops) {
 			fixItems(state.sensors.endstops, Endstop);
 		}
@@ -525,9 +576,15 @@ export function fixMachineItems(state, mergeData) {
 						case FilamentMonitorType.rotatingMagnet:
 							fixObject(filamentSensor, new RotatingMagnetFilamentMonitor());
 							break;
+						default:
+							fixObject(filamentSensor, new FilamentMonitor());
+							break;
 					}
 				}
 			});
+		}
+		if (mergeData.sensors.inputs) {
+			fixItems(state.sensors.inputs, GpInputPort);
 		}
 		if (mergeData.sensors.probes) {
 			fixItems(state.sensors.probes, Probe);
@@ -536,6 +593,10 @@ export function fixMachineItems(state, mergeData) {
 
 	if (mergeData.spindles) {
 		fixItems(state.spindles, Spindle);
+	}
+
+	if (mergeData.state && mergeData.state.restorePoints) {
+		fixItems(state.state.restorePoints, RestorePoint);
 	}
 
 	if (mergeData.tools) {

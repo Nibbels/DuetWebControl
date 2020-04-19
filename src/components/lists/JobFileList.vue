@@ -9,7 +9,7 @@
 			<v-btn class="hidden-sm-and-down mr-3" :disabled="uiFrozen" @click="showNewDirectory = true">
 				<v-icon class="mr-1">mdi-folder-plus</v-icon> {{ $t('button.newDirectory.caption') }}
 			</v-btn>
-			<v-btn class="hidden-sm-and-down mr-3" color="info" :loading="loading" :disabled="uiFrozen" @click="refresh">
+			<v-btn class="hidden-sm-and-down mr-3" color="info" :loading="loading || fileinfoProgress !== -1" :disabled="uiFrozen" @click="refresh">
 				<v-icon class="mr-1">mdi-refresh</v-icon> {{ $t('button.refresh.caption') }}
 			</v-btn>
 			<upload-btn class="hidden-sm-and-down" :directory="directory" target="gcodes" color="primary"></upload-btn>
@@ -167,53 +167,60 @@ export default {
 		async requestFileInfo(directory, fileIndex, fileCount) {
 			if (this.fileinfoDirectory === directory) {
 				if (this.isConnected && fileIndex < fileCount) {
+					// Update progress
+					this.fileinfoProgress = fileIndex;
+
+					// Try to get file info for the next file
 					const file = this.filelist[fileIndex];
 					if (!file.isDirectory) {
+						let gotFileInfo = false;
 						try {
-							// Get the fileinfo either from our cache or from the Duet
+							// Check if it is possible to parse this file
 							const filename = Path.combine(directory, file.name);
-							let fileInfo = this.fileInfos[filename];
-							if (!fileInfo) {
-								fileInfo = await this.getFileInfo(filename);
-								this.setFileInfo({ filename, fileInfo });
+							if (Path.isGCodePath(file.name, this.gCodesDirectory)) {
+								// Get the fileinfo either from our cache or from the Duet
+								let fileInfo = this.fileInfos[filename];
+								if (!fileInfo) {
+									fileInfo = await this.getFileInfo(filename);
+									this.setFileInfo({ filename, fileInfo });
+								}
+
+								// Start again if the number of files has changed
+								if (fileCount !== this.filelist.length) {
+									fileIndex = -1;
+									fileCount = this.filelist.length;
+									return;
+								}
+
+								// Set file info
+								gotFileInfo = true
+								file.height = fileInfo.height;
+								file.layerHeight = fileInfo.layerHeight;
+								file.filament = fileInfo.filament;
+								file.generatedBy = fileInfo.generatedBy;
+								file.printTime = fileInfo.printTime ? fileInfo.printTime : null;
+								file.simulatedTime = fileInfo.simulatedTime ? fileInfo.simulatedTime : null;
 							}
-
-							// Start again if the number of files has changed
-							if (fileCount !== this.filelist.length) {
-								fileIndex = -1;
-								fileCount = this.filelist.length;
-								return;
-							}
-
-							// Set file info
-							file.height = fileInfo.height;
-							file.layerHeight = fileInfo.layerHeight;
-							file.filament = fileInfo.filament;
-							file.generatedBy = fileInfo.generatedBy;
-							file.printTime = fileInfo.printTime ? fileInfo.printTime : null;
-							file.simulatedTime = fileInfo.simulatedTime ? fileInfo.simulatedTime : null;
-
-							// Update progress
-							this.fileinfoProgress = fileIndex;
 						} catch (e) {
-							// Invalidate file info
-							file.height = null;
-							file.layerHeight = null;
-							file.filament = [];
-							file.generatedBy = null;
-							file.printTime = null;
-							file.simulatedTime = null;
-
 							// Deal with the error. If the connection has been terminated, the next call will invalidate everything
 							if (!(e instanceof DisconnectedError) && !(e instanceof InvalidPasswordError)) {
 								console.warn(e);
 								this.$log('error', this.$t('error.fileinfoRequestFailed', [file.name]), e.message);
 							}
 						}
+
+						// Remove loading state from the items if no info could be found
+						if (!gotFileInfo) {
+							file.height = null;
+							file.layerHeight = null;
+							file.filament = [];
+							file.generatedBy = null;
+							file.printTime = null;
+							file.simulatedTime = null;
+						}
 					}
 
 					// Move on to the next item
-					this.fileinfoProgress = fileIndex;
 					this.requestFileInfo(directory, fileIndex + 1, fileCount);
 				} else {
 					// No longer connected or finished

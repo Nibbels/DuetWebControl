@@ -14,7 +14,7 @@
 	display: flex;
 	flex-grow: 1;
 	font-family: monospace;
-	padding-left: 12px;
+	padding-left: 12px !important;
 	margin-top: 0 !important;
 	resize: none;
 	-moz-tab-size: 4;
@@ -24,7 +24,7 @@
 </style>
 
 <template>
-	<v-dialog v-model="shown" fullscreen hide-overlay transition="dialog-bottom-transition">
+	<v-dialog :value="shown" @input="$emit('update:shown', $event)" fullscreen hide-overlay transition="dialog-bottom-transition">
 		<v-card class="d-flex flex-column">
 			<v-app-bar flat dark color="primary" class="flex-grow-0 flex-shrink-1">
 				<v-btn icon dark @click="close(false)">
@@ -48,7 +48,7 @@
 			<v-textarea ref="textarea" hide-details solo :rows="null" class="edit-textarea"
 						autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
 						:value="innerValue" @input.passive="valueChanged = true" @blur="innerValue = $event.target.value"
-						@keydown.tab.exact.prevent="onTextareaTab" @keydown.esc="close(false)"></v-textarea>
+						@keydown.tab.exact.prevent="onTextareaTab" @keydown.esc.prevent.stop="close(false)"></v-textarea>
 		</v-card>
 	</v-dialog>
 </template>

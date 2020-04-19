@@ -37,6 +37,10 @@ a:not(:hover) {
 	text-decoration: none;
 }
 
+textarea {
+	line-height: 1.25rem !important;
+}
+
 .theme--dark textarea {
 	caret-color: #FFF;
 }
@@ -102,15 +106,15 @@ a:not(:hover) {
 			<v-scroll-y-transition>
 				<v-container v-show="!hideGlobalContainer || $vuetify.breakpoint.mdAndUp" id="global-container" fluid class="py-0">
 					<v-row>
-						<v-col>
+						<v-col cols="12" sm="6" md="4" lg="4" xl="4">
 							<status-panel></status-panel>
 						</v-col>
 
-						<v-col>
+						<v-col cols="12" sm="6" md="5" lg="5" xl="4">
 							<tools-panel></tools-panel>
 						</v-col>
 
-						<v-col v-if="$vuetify.breakpoint.mdAndUp" :class="{ 'd-flex': hasTemperaturesToDisplay }">
+						<v-col v-if="$vuetify.breakpoint.mdAndUp" :class="{ 'd-flex': hasTemperaturesToDisplay }" md="3" lg="3" xl="4">
 							<temperature-chart></temperature-chart>
 						</v-col>
 					</v-row>
@@ -148,6 +152,7 @@ export default {
 			globalShowConnectDialog: state => state.showConnectDialog,
 
 			boards: state => state.machine.model.boards,
+			menuDirectory: state => state.machine.model.directories.menu,
 			name: state => state.machine.model.network.name,
 			status: state => state.machine.model.state.status,
 
@@ -179,7 +184,7 @@ export default {
 				return (this.webcam.url !== '');
 			}
 			if (condition === 'display') {
-				return this.boards.length ? this.boards[0].supports12864 : false;
+				return (this.boards.length > 0) && this.boards[0].supports12864;
 			}
 			return true;
 		},

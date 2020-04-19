@@ -14,7 +14,7 @@ import { log, logCode } from '../../plugins/logging.js'
 import { makeFileTransferNotification, showMessage } from '../../plugins/toast.js'
 
 import beep from '../../utils/beep.js'
-import { DisconnectedError, CodeBufferError, OperationCancelledError } from '../../utils/errors.js'
+import { DisconnectedError, CodeBufferError, InvalidPasswordError, OperationCancelledError } from '../../utils/errors.js'
 import Path from '../../utils/path.js'
 
 export const defaultMachine = '[default]'			// must not be a valid hostname
@@ -49,7 +49,7 @@ export default function(hostname, connector) {
 		state: {
 			autoSleep: false,
 			events: [],								// provides machine events in the form of { date, type, title, message }
-			isReconnecting: false
+			isReconnecting: false,
 		},
 		getters: {
 			connector: () => connector,
@@ -62,12 +62,15 @@ export default function(hostname, connector) {
 			...mapConnectorActions(connector, ['disconnect', 'delete', 'move', 'makeDirectory', 'getFileList', 'getFileInfo']),
 
 			// Reconnect after a connection error
-			async reconnect({ dispatch }) {
+			async reconnect({ commit, dispatch }) {
+				commit('setReconnecting', true);
 				try {
 					await connector.reconnect();
+					commit('setReconnecting', false);
+					log('success', i18n.t('events.reconnected'));
 				} catch (e) {
 					console.warn(e);
-					setTimeout(() => dispatch('reconnect'), 2000);
+					dispatch('onConnectionError', e);
 				}
 			},
 
@@ -193,7 +196,7 @@ export default function(hostname, connector) {
 				const lastBeepFrequency = state.model.state.beep ? state.model.state.beep.frequency : null;
 				const lastBeepDuration = state.model.state.beep ? state.model.state.beep.duration : null;
 				const lastDisplayMessage = state.model.state.displayMessage;
-				const wasPrinting = isPrinting(state.model.state.status);
+				const lastStatus = state.model.state.status;
 
 				// Check if the job has finished and if so, clear the file cache
 				if (payload.job && payload.job.lastFileName && payload.job.lastFileName !== state.model.job.lastFileName) {
@@ -216,40 +219,37 @@ export default function(hostname, connector) {
 					showMessage(state.model.state.displayMessage);
 				}
 
-				// Is an update or emergency reset in progress?
-				if (state.model.state.status === StatusType.updating || state.model.state.status === StatusType.halted) {
-					// Start reconnecting
-					if (!state.isReconnecting) {
-						if (state.model.state.status === 'halted') {
-							log('warning', i18n.t('events.emergencyStop'));
-						} else {
-							log('warning', i18n.t('events.reconnecting'));
-						}
+				// Has the firmware halted?
+				if (lastStatus != state.model.state.status && state.model.state.status === StatusType.halted) {
+					log('warning', i18n.t('events.emergencyStop'));
+				}
 
-						commit('setReconnecting', true);
-						setTimeout(() => dispatch('reconnect'), 2000);
-					}
-				} else {
-					// No longer reconnecting...
-					if (state.isReconnecting) {
-						commit('setReconnecting', false);
-						log('success', i18n.t('events.reconnected'));
-					}
-					
-					// Have we just finished a job? Send M1 if auto-sleep is enabled
-					if (wasPrinting && !isPrinting(state.model.state.status) && state.autoSleep) {
-						try {
-							await dispatch('sendCode', 'M1');
-						} catch (e) {
-							logCode('M1', e.message, hostname);
-						}
+				// Have we just finished a job? Send M1 if auto-sleep is enabled
+				if (isPrinting(lastStatus) && !isPrinting(state.model.state.status) && state.autoSleep) {
+					try {
+						await dispatch('sendCode', 'M1');
+					} catch (e) {
+						logCode('M1', e.message, hostname);
 					}
 				}
 			},
 
 			// Actions for specific events triggered by the machine connector
-			async onConnectionError({ dispatch }, error) {
-				await dispatch('onConnectionError', { hostname, error }, { root: true });
+			async onConnectionError({ state, commit, dispatch }, error) {
+				if (state.isReconnecting && !(error instanceof InvalidPasswordError)) {
+					// Retry after a short moment
+					setTimeout(() => dispatch('reconnect'), 2000);
+				} else if (!state.isReconnecting && (state.model.state.status === StatusType.updating || state.model.state.status === StatusType.halted)) {
+					// Try to reconnect after a short period of time
+					if (state.model.state.status !== StatusType.updating) {
+						log('warning', i18n.t('events.reconnecting'));
+					}
+					commit('setReconnecting', true);
+					setTimeout(() => dispatch('reconnect'), 2000);
+				} else {
+					// Notify the root store about this event
+					await dispatch('onConnectionError', { hostname, error }, { root: true });
+				}
 			},
 			onCodeCompleted(context, { code, reply }) {
 				if (code === undefined) {

@@ -129,7 +129,6 @@ import { defaultMachine, getModifiedDirectories } from '../../store/machine'
 import { DisconnectedError, OperationCancelledError } from '../../utils/errors.js'
 import Path from '../../utils/path.js'
 
-const bigFileThreshold = 1048576;		// 1 MiB
 const maxEditFileSize = 15728640;		// 15 MiB
 
 export default {
@@ -299,7 +298,13 @@ export default {
 			await this.loadDirectory(this.innerDirectory);
 		},
 		async loadDirectory(directory) {
-			if (!this.isConnected || this.innerLoading) {
+			if (!this.isConnected) {
+				return;
+			}
+
+			// Update our path even if we're still busy loading
+			this.innerDirectory = directory;
+			if (this.innerLoading) {
 				return;
 			}
 
@@ -327,10 +332,16 @@ export default {
 					}, this);
 				}
 
-				this.innerDirectory = directory;
+				// Check if another directory was requested while files were being loaded
+				if (directory !== this.innerDirectory) {
+					this.innerLoading = false;
+					this.loadDirectory(this.innerDirectory);
+					return;
+				}
+
+				// Assign new file list
 				this.innerFilelist = files;
 				this.innerValue = [];
-
 				this.$nextTick(function() {
 					this.$emit('directoryLoaded', directory);
 				});
@@ -456,7 +467,7 @@ export default {
 				}
 			}, this);
 			tableClone.style.backgroundColor = this.$vuetify.theme.isDark ? '#424242' : '#FFFFFF';
-			tableClone.style.opacity = 0.5;
+			tableClone.style.opacity = 0.7;
 			tableClone.style.position = 'absolute';
 			tableClone.style.pointerEvents = 'none';
 			Array.from(tableClone.querySelectorAll('[class^="v-ripple"]')).forEach(function(item) {
@@ -519,24 +530,11 @@ export default {
 		},
 		async edit(item) {
 			try {
-				let notification, showDelay = 0;
-				if (item.size > bigFileThreshold) {
-					notification = this.$makeNotification('warning', this.$t('notification.loadingFile.title'), this.$t('notification.loadingFile.message'), false);
-					showDelay = 1000;
-				}
-
 				const filename = Path.combine(this.innerDirectory, item.name);
 				const response = await this.machineDownload({ filename, type: 'text', showSuccess: false });
-				const editDialog = this.editDialog;
-				setTimeout(function() {
-					editDialog.filename = filename;
-					editDialog.content = response;
-					editDialog.shown = true;
-
-					if (notification) {
-						setTimeout(notification.hide, 1000);
-					}
-				}, showDelay);
+				this.editDialog.filename = filename;
+				this.editDialog.content = response;
+				this.editDialog.shown = true;
 			} catch (e) {
 				if (!(e instanceof DisconnectedError) && !(e instanceof OperationCancelledError)) {
 					// should be handled before we get here

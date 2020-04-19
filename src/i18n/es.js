@@ -1,19 +1,23 @@
 export default {
 	language: 'Spanish',
 	'$vuetify': {
+		badge: 'Placa',
 		close: 'Cerrar',
 		dataIterator: {
-			pageText: '{0}-{1} de {2}',
-			noResultsText: 'No se han encontrado coincidencias',
-			loadingText: 'Cargando elementos...'
+			noResultsText: 'Ningún elemento coincide con la búsqueda',
+			loadingText: 'Cargando...',
 		},
 		dataTable: {
 			itemsPerPageText: 'Filas por página:',
 			ariaLabel: {
-				sortDescending: ': Orden descendente. Activar para anular clasificación.',
-				sortAscending: ': Orden ascendente. Activar para anular clasificación.',
-				sortNone: ': Sin ordenar. Activar para clasificar de forma ascendente.'
+				sortDescending: 'Orden descendente.',
+				sortAscending: 'Orden ascendente.',
+				sortNone: 'Sin ordenar.',
+				activateNone: 'Pulse para quitar orden.',
+				activateDescending: 'Pulse para ordenar descendente.',
+				activateAscending: 'Pulse para ordenar ascendente.',
 			},
+			sortBy: 'Ordenado por',
 		},
 		dataFooter: {
 			itemsPerPageText: 'Elementos por página:',
@@ -21,19 +25,31 @@ export default {
 			nextPage: 'Página siguiente',
 			prevPage: 'Página anterior',
 			firstPage: 'Primer página',
-			lastPage: 'Última página'
+			lastPage: 'Última página',
+			pageText: '{0}-{1} de {2}',
 		},
 		datePicker: {
-			itemsSelected: '{0} seleccionado'
+			itemsSelected: '{0} seleccionados',
 		},
 		noDataText: 'No hay datos disponibles',
 		carousel: {
-			prev: 'Vista anterior',
-			next: 'Vista posterior'
+			prev: 'Visual anterior',
+			next: 'Visual siguiente',
+			ariaLabel: {
+				delimiter: 'Carousel slide {0} of {1}',
+			},
 		},
 		calendar: {
-			moreEvents: '{0} más'
-		}
+			moreEvents: '{0} más',
+		},
+		fileInput: {
+			counter: '{0} archivos',
+			counterSize: '{0} archivos ({1} en total)',
+		},
+		timePicker: {
+			am: 'AM',
+			pm: 'PM',
+		},
 	},
 	button: {
 		add: {
@@ -66,6 +82,10 @@ export default {
 		},
 		refresh: {
 			caption: 'Actualizar'
+		},
+		reset: {
+			caption: 'Máquina de reajustes',
+			title: 'Envía M999 a la máquina para reiniciarla'
 		},
 		upload: {
 			gcodes: {
@@ -431,10 +451,6 @@ export default {
 			successMulti: '{0} Archivos descargados con éxito',
 			error: 'Fallo al descargar {0}'
 		},
-		loadingFile: {
-			title: 'Cargando archivo...',
-			message: 'Este archivo es relativamente grande, por lo que puede pasar un tiempo antes de que se muestre.'
-		},
 		message: 'Mensaje',
 		mount: {
 			successTitle: 'Tarjeta SD montada',
@@ -645,6 +661,7 @@ export default {
 			caption: 'Webcam',
 			webcamURL: 'Webcam URL (opcional)',
 			webcamUpdateInterval: 'Intervalo Actualización Webcam ({0})',
+			webcamLiveURL: 'URL para abrir cuando se hace clic en la imagen de la cámara web (opcional)',
 			webcamFix: 'No añadir cabecera HTTP adicional recargar imágenes',
 			webcamEmbedded: 'Incrustar imagen de cámara web en un iframe',
 			webcamRotation: 'Rotar imagen Webcam',
@@ -669,10 +686,9 @@ export default {
 			topSpeed: 'Velocidad Máxima',
 			sensors: 'Sensores',
 			mcuTemp: 'Temperatura Placa',
-			mcuTempTitle: 'Minima: {0}, Máxima: {1}',
+			minMax: 'Minimo: {0}, Máximo {1}',
 			vIn: 'Vin',
 			v12: 'V12',
-			minMax: 'Minimo: {0}, Máximo {1}',
 			fanRPM: 'Ventilador RPM',
 			probe: 'Z-Sensor|Z-Sensores',
 			noStatus: 'Sin Estado'

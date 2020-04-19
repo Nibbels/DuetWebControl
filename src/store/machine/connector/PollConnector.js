@@ -218,14 +218,14 @@ export default class PollConnector extends BaseConnector {
 				this.scheduleUpdate();
 				break;
 			case 1:
-				this.dispatch('onConnectionError', new InvalidPasswordError());
-				break;
+				// Bad password
+				throw new InvalidPasswordError();
 			case 2:
-				// Keep retrying until a session is available
+				// No free session available
 				throw new NoFreeSessionError();
 			default:
-				this.dispatch('onConnectionError', new LoginError(`Unknown err value: ${response.err}`))
-				break;
+				// Generic login error
+				throw new LoginError(`Unknown err value: ${response.err}`);
 		}
 	}
 
@@ -234,12 +234,11 @@ export default class PollConnector extends BaseConnector {
 	}
 
 	unregister() {
+		this.cancelRequests();
 		if (this.updateLoopTimer) {
 			clearTimeout(this.updateLoopTimer);
 			this.updateLoopTimer = null;
 		}
-
-		this.cancelRequests();
 		super.unregister();
 	}
 
@@ -316,8 +315,8 @@ export default class PollConnector extends BaseConnector {
 				axes: response.coords.xyz.map((position, drive) => ({
 					drives: [drive],
 					homed: Boolean(response.coords.axesHomed[drive]),
-					machinePosition: position,
-					userPosition: position
+					machinePosition: (position === 9999) ? null : position,
+					userPosition: (position === 9999) ? null : position
 				})),
 				currentMove: {
 					requestedSpeed: (response.speeds !== undefined) ? response.speeds.requested : null,
@@ -337,7 +336,10 @@ export default class PollConnector extends BaseConnector {
 			} : {},
 			sensors: {
 				analog: response.temps.current.map((lastReading, number) => ({ lastReading, number }))
-						.concat(response.temps.extra.map(extra => ({ lastReading: extra.temp, name: extra.name }))),
+						.concat(response.temps.extra.map(extra => ({
+							lastReading: (extra.temp === 9999) ? null : extra.temp,
+							name: extra.name
+						}))),
 				probes: (this.probeType !== 0) ? [
 					{
 						value: [response.sensors.probeValue].concat(response.sensors.probeSecondary ? response.sensors.probeSecondary : [])
@@ -358,7 +360,9 @@ export default class PollConnector extends BaseConnector {
 			newData.move.axes[2].babystep = (response.params.babystep !== undefined) ? response.params.babystep : 0;
 		}
 		if (response.coords.machine) {
-			response.coords.machine.forEach((machinePosition, axis) => newData.move.axes[axis].machinePosition = machinePosition);
+			response.coords.machine.forEach(function(machinePosition, axis) {
+				newData.move.axes[axis].machinePosition = (machinePosition === 9999) ? null : machinePosition;
+			});
 		}
 		if (response.temps.bed && response.temps.bed.heater >= 0 && response.temps.bed.heater < newData.sensors.analog.length) {
 			newData.heat.heaters[response.temps.bed.heater].active = response.temps.bed.active;
@@ -386,7 +390,6 @@ export default class PollConnector extends BaseConnector {
 					{
 						firmwareFileName: boardDefinition.firmwareFileName,
 						firmwareName: response.firmwareName,
-						firmwareVersion: response.firmwareVersion,
 						iapFileNameSD: boardDefinition.iapFileNameSD,
 						maxHeaters: boardDefinition.maxHeaters,
 						maxMotors: boardDefinition.maxMotors,
@@ -412,7 +415,7 @@ export default class PollConnector extends BaseConnector {
 				fans: newData.fans.map((fanData, index) => ({
 					name: !response.params.fanNames ? null : response.params.fanNames[index],
 					thermostatic: {
-						control: (response.controllableFans & (1 << index)) === 0,
+						heaters: ((response.controllableFans & (1 << index)) === 0) ? [] : [-1]
 					}
 				})),
 				heat: {
@@ -459,12 +462,22 @@ export default class PollConnector extends BaseConnector {
 					extruders: tool.drives,
 					axes: tool.axisMap,
 					fans: bitmapToArray(tool.fans),
-					filament: tool.filament,
+					filamentExtruder: (tool.drives.length > 0) ? tool.drives[0] : -1,
 					offsets: tool.offsets
 				})) : []
 			});
 
 			newData.heat.heaters.forEach(heater => heater.max = response.tempLimit);
+
+			response.tools.forEach(tool => {
+				if (tool.drives.length > 0) {
+					const drive = tool.drives[0];
+					if (drive >= 0 && drive < newData.move.extruders.length) {
+						newData.move.extruders[0].filament = tool.filament;
+					}
+				}
+			});
+
 			if (response.temps.names !== undefined) {
 				response.temps.names.forEach((name, index) => newData.sensors.analog[index].name = name);
 			}
@@ -594,7 +607,7 @@ export default class PollConnector extends BaseConnector {
 					title: response.output.msgBox.title,
 					message: response.output.msgBox.msg,
 					timeout: response.output.msgBox.timeout,
-					axisControls: bitmapToArray(response.output.msgBox.controls)
+					axisControls: response.output.msgBox.controls
 				});
 			}
 		}
@@ -619,6 +632,17 @@ export default class PollConnector extends BaseConnector {
 					tool: spindle.tool
 				}))
 			});
+		}
+
+		// Remove invalid heaters
+		for (let i = 0; i < newData.heat.heaters.length; i++) {
+			const heater = newData.heat.heaters[i];
+			if (heater && heater.state === HeaterState.off) {
+				if (heater.sensor < 0 || heater.sensor >= newData.sensors.analog.length ||
+					newData.sensors.analog[heater.sensor].lastReading === 2000) {
+					newData.heat.heaters[i] = null;
+				}
+			}
 		}
 
 		// Update the data model
@@ -646,20 +670,14 @@ export default class PollConnector extends BaseConnector {
 		this.justConnected = false;
 		this.updateLoopCounter++;
 
-		// Check if the connection is about to be interrupted
-		if (response.status === 'F' || response.status === 'H') {
-			throw new DisconnectedError();
-		}
-
 		// Schedule the next status update
 		this.scheduleUpdate();
 	}
 
 	convertHeaterState(state) {
-		for (let key in HeaterState) {
-			if (state === HeaterState[key]) {
-				return key;
-			}
+		const keys = Object.keys(HeaterState);
+		if (state >= 0 && state < keys.length) {
+			return keys[state];
 		}
 		return null;
 	}
@@ -739,6 +757,12 @@ export default class PollConnector extends BaseConnector {
 
 			// Query the seqs field and the G-code reply
 			this.lastSeqs = (await this.request('GET', 'rr_model', { key: 'seqs' })).result;
+			if (this.lastSeqs == null || this.lastSeqs.reply === undefined) {
+				console.warn('Incompatible rr_model version detected, falling back to status responses');
+				window.forceLegacyConnect = true;
+				BaseConnector.setConnectingProgress(-1);
+				return;
+			}
 			if (this.lastSeqs.reply > 0) {
 				await this.getGCodeReply(this.lastSeqs.reply);
 			}
@@ -759,9 +783,6 @@ export default class PollConnector extends BaseConnector {
 					} else if (key === 'state') {
 						status = keyResponse.result.status;
 						this.lastUptime = keyResponse.result.upTime;
-						if (keyResponse.result.status === StatusType.updating || keyResponse.result.status === StatusType.halted) {
-							throw new DisconnectedError();
-						}
 					}
 				}
 			} finally {
@@ -807,14 +828,9 @@ export default class PollConnector extends BaseConnector {
 				await this.getGCodeReply(seqs.reply);
 			}
 			this.lastSeqs = seqs;
-
-			// Check if the connection is about to be interrupted
-			if (response.result.state.status === StatusType.updating || response.result.state.status === StatusType.halted) {
-				throw new DisconnectedError();
-			}
 		}
 
-		// See if we need to record more layer stats (TODO move this to a dedicate file on the Duet)
+		// See if we need to record more layer stats
 		if (jobKey && isPrinting(status)) {
 			let layersChanged = false;
 			if (!isPrinting(this.lastStatus)) {
@@ -853,7 +869,6 @@ export default class PollConnector extends BaseConnector {
 			}
 
 			if (addLayers) {
-				const layerJustChanged = (status === StatusType.simulating) || ((jobKey.layer - this.layers.length) === 2);
 				if (this.printStats.duration) {
 					// Got info about the past layer, add what we know
 					this.layers.push({
@@ -872,11 +887,10 @@ export default class PollConnector extends BaseConnector {
 						this.layers.push({ duration: avgDuration });
 						layersChanged = true;
 					}
-					this.printStats.zPosition = zPosition;
 				}
 
-				// Keep track of the past layer if the layer change just happened
-				if (layerJustChanged) {
+				// Keep track of the past layer if new layers have been added
+				if (layersChanged) {
 					this.printStats.duration = jobKey.duration;
 					this.printStats.extrRaw = extrRaw;
 					this.printStats.fractionPrinted = fractionPrinted;
@@ -900,6 +914,7 @@ export default class PollConnector extends BaseConnector {
 	}
 
 	async doUpdate(startTime) {
+		this.updateLoopTimer = null;
 		try {
 			if (new Date() - startTime > this.sessionTimeout) {
 				// Safari suspends setTimeout calls when a tab is inactive - check for this case
@@ -914,15 +929,13 @@ export default class PollConnector extends BaseConnector {
 				await this.updateLoopStatus();
 			}
 		} catch (e) {
-			if (!(e instanceof DisconnectedError)) {
-				console.warn(e);
-				await this.dispatch('onConnectionError', e);
-			}
+			console.warn(e);
+			await this.dispatch('onConnectionError', e);
 		}
 	}
 
 	scheduleUpdate() {
-		if (this.justConnected || this.updateLoopTimer) {
+		if (!this.updateLoopTimer) {
 			const startTime = new Date();
 			this.updateLoopTimer = setTimeout(this.doUpdate.bind(this, startTime), this.settings.updateInterval);
 		}

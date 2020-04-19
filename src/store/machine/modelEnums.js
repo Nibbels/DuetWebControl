@@ -3,10 +3,10 @@
 export const AnalogSensorType = {
 	thermistor: 'thermistor',
 	pt1000: 'pt1000',
-	max31865: 'rtdmax31855',
+	max31865: 'rtdmax31865',
 	max31855: 'thermocouplemax31855',
 	max31856: 'thermocouplemax31856',
-	analog: 'linearanalog',
+	linearAnalog: 'linearanalog',
 	dht11: 'dht11',
 	dht21: 'dht21',
 	dht22: 'dht22',
@@ -15,6 +15,7 @@ export const AnalogSensorType = {
 	mcuTemp: 'mcutemp',
 	drivers: 'drivers',
 	driversDuex: 'driversduex',
+	unknown: 'unknown'
 }
 
 export const Compatibility = {
@@ -24,10 +25,14 @@ export const Compatibility = {
 	teacup: 'Teacup',
 	sprinter: 'Sprinter',
 	repetier: 'Repetier',
-	nanoDlp: 'nanoDLP',
+	nanoDlp: 'NanoDLP'
 }
 
-// TODO add CompensationType here.
+// This is currently unused because RRF <= 2 supports 'n Point' compensation
+export const CompensationType = {
+	none: 'none',
+	mesh: 'mesh'
+}
 
 export const DistanceUnit = {
 	mm: 'mm',
@@ -39,6 +44,7 @@ export const EndstopType = {
 	zProbeAsEndstop: 'zProbeAsEndstop',
 	motorStallAny: 'motorStallAny',
 	motorStallIndividual: 'motorStallIndividual',
+	unknown: 'unknown'
 }
 
 export const FilamentMonitorType = {
@@ -46,12 +52,21 @@ export const FilamentMonitorType = {
 	laser: 'laser',
 	pulsed: 'pulsed',
 	rotatingMagnet: 'rotatingMagnet',
+	unknown: 'unknown'
+}
+
+export const HeaterMonitorAction = {
+	generateFault: 0,
+	permanentSwitchOff: 1,
+	temporarySwitchOff: 2,
+	shutDown: 3
 }
 
 export const HeaterMonitorCondition = {
 	disabled: 'disabled',
 	tooHigh: 'tooHigh',
 	tooLow: 'tooLow',
+	undefined: 'undefined'
 }
 
 export const HeaterState = {
@@ -71,7 +86,7 @@ export const HttpEndpointType = {
 	trace: 'TRACE',
 	delete: 'DELETE',
 	options: 'OPTIONS',
-	webSocket: 'WebSocket',
+	webSocket: 'WebSocket'
 }
 
 export const InputChannelName = {
@@ -81,7 +96,7 @@ export const InputChannelName = {
 	usb: 'USB',
 	aux: 'Aux',
 	trigger: 'Trigger',
-	codeQueue: 'Queue',
+	queue: 'Queue',
 	lcd: 'LCD',
 	sbc: 'SBC',
 	daemon: 'Daemon',
@@ -91,8 +106,9 @@ export const InputChannelName = {
 export const InputChannelState = {
 	awaitingAcknowledgement: 'awaitingAcknowledgement',
 	idle: 'idle',
+	executing: 'executing',
 	waiting: 'waiting',
-	reading: 'reading',
+	reading: 'reading'
 }
 
 export const KinematicsName = {
@@ -108,13 +124,13 @@ export const KinematicsName = {
 	polar: 'Polar',
 	rotaryDelta: 'Rotary delta',
 	scara: 'Scara',
-	unknown: 'unknown',
+	unknown: 'unknown'
 }
 
 export const MachineMode = {
 	fff: 'FFF',
 	cnc: 'CNC',
-	laser: 'Laser',
+	laser: 'Laser'
 }
 
 export const MessageBoxMode = {
@@ -155,6 +171,12 @@ export const StatusType = {
 	busy: 'busy',
 	changingTool: 'changingTool',
 	idle: 'idle'
+}
+
+export const ToolState = {
+	off: 'off',
+	active: 'active',
+	standby: 'standby'
 }
 
 export function isPaused(status) {

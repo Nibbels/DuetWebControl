@@ -1,19 +1,23 @@
 export default {
 	language: 'French',
 	'$vuetify': {
+		badge: 'Badge',
 		close: 'Fermer',
 		dataIterator: {
 			noResultsText: 'Aucun enregistrement correspondant trouvé',
-			loadingText: "Chargement de l'élément..."
+			loadingText: "Chargement de l'élément...",
 		},
 		dataTable: {
 			itemsPerPageText: 'Lignes par page:',
 			ariaLabel: {
-				sortDescending: ': Tri décroissant. Activer pour supprimer le tri.',
-				sortAscending: ': Tri croissant. Activer pour trier par ordre décroissant.',
-				sortNone: ': Non trié. Activer pour trier par ordre croissant.'
+				sortDescending: 'Tri décroissant.',
+				sortAscending: 'Tri croissant.',
+				sortNone: 'Non trié.',
+				activateNone: 'Activer pour supprimer le tri.',
+				activateDescending: 'Activer pour trier par ordre décroissant.',
+				activateAscending: 'Activer pour trier par ordre croissant.',
 			},
-			sortBy: 'Trier par'
+			sortBy: 'Trier par',
 		},
 		dataFooter: {
 			itemsPerPageText: 'Élements par page:',
@@ -22,27 +26,30 @@ export default {
 			prevPage: 'Page précédente',
 			firstPage: 'Première page',
 			lastPage: 'Dernière page',
-			pageText: '{0}-{1} de {2}'
+			pageText: '{0}-{1} de {2}',
 		},
 		datePicker: {
-			itemsSelected: '{0} sélectionnés'
+			itemsSelected: '{0} sélectionnés',
 		},
 		noDataText: 'Aucune donnée disponible',
 		carousel: {
 			prev: 'Visuel précédent',
-			next: 'Visuel suivant'
+			next: 'Visuel suivant',
+			ariaLabel: {
+				delimiter: 'Carousel slide {0} of {1}',
+			},
 		},
 		calendar: {
-			moreEvents: '{0} plus'
+			moreEvents: '{0} plus',
 		},
 		fileInput: {
 			counter: '{0} fichiers',
-			counterSize: '{0} fichiers ({1} au total)'
+			counterSize: '{0} fichiers ({1} au total)',
 		},
 		timePicker: {
 			am: 'AM',
-			pm: 'PM'
-		}
+			pm: 'PM',
+		},
 	},
 	button: {
 		add: {
@@ -75,6 +82,10 @@ export default {
 		},
 		refresh: {
 			caption: 'Rafraîchir'
+		},
+		reset: {
+			caption: 'Réinitialisation de la machine',
+			title: 'Envoyez M999 à la machine pour la réinitialiser'
 		},
 		upload: {
 			gcodes: {
@@ -438,10 +449,6 @@ export default {
 			successMulti: 'Téléchargement de {0} fichiers réussi',
 			error: 'Échec du téléchargement de {0}'
 		},
-		loadingFile: {
-			title: 'Chargement du fichier',
-			message: 'Ce fichier est relativement gros alors cela peut prendre du temps avant qu\'il s\'affiche.'
-		},
 		message: 'Message',
 		mount: {
 			successTitle: 'Carte SD Montée',
@@ -651,6 +658,7 @@ export default {
 			caption: 'Webcam',
 			webcamURL: 'Webcam URL (optionnel)',
 			webcamUpdateInterval: '>Intervale de màj de la Webcam ({0})',
+			webcamLiveURL: 'URL à ouvrir lorsque l\'image de la webcam est cliquée (facultatif)',
 			webcamFix: 'Ne pas ajouter de qualificatif HTTP supplémentaire lors du rechargement d\'images',
 			webcamEmbedded: 'Incorporer l\'image de la webcam dans un iframe',
 			webcamRotation: 'Pivoter l\'image de la webcam',
@@ -675,10 +683,9 @@ export default {
 			topSpeed: 'Vitesses de Pointe',
 			sensors: 'Capteurs',
 			mcuTemp: 'Température MCU',
-			mcuTempTitle: 'Minimum: {0}, Maximum: {1}',
+			minMax: 'Minimum: {0}, Maximum {1}',
 			vIn: 'Vin',
 			v12: 'V12',
-			minMax: 'Minimum: {0}, Maximum {1}',
 			fanRPM: 'TPM Ventilateur',
 			probe: 'Sonde-Z|Sondes-Z',
 			noStatus: 'Pas de Statut'

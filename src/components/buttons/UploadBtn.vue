@@ -53,10 +53,10 @@ export default {
 				case 'start': return '.g,.gcode,.gc,.gco,.nc,.ngc,.tap';
 				case 'macros': return '*';
 				case 'filaments': return '.zip';
-				case 'display': return '*';
+				case 'firmware': return '.zip,.bin';
+				case 'menu': return '*';
 				case 'system': return '.zip,.bin,.json,.g,.csv';
 				case 'web': return '.zip,.csv,.json,.htm,.html,.ico,.xml,.css,.map,.js,.ttf,.eot,.svg,.woff,.woff2,.jpeg,.jpg,.png,.gz';
-				case 'update': return '.zip,.bin';
 			}
 			return undefined;
 		},
@@ -68,12 +68,12 @@ export default {
 			switch (this.target) {
 				case 'gcodes': return this.directories.gCodes;
 				case 'start': return this.directories.gCodes;
+				case 'firmware': return this.directories.firmware;
 				case 'macros': return this.directories.macros;
 				case 'filaments': return this.directories.filaments;
-				case 'display': return this.directories.display;
+				case 'menu': return this.directories.menu;
 				case 'system': return this.directories.system;
 				case 'web': return this.directories.web;
-				case 'update': return this.directories.system;
 			}
 			return undefined;
 		},
@@ -90,7 +90,7 @@ export default {
 			confirmUpdate: false,
 			updates: {
 				webInterface: false,
-				firmware: false,
+				firmwareBoards: [],
 				wifiServer: false,
 				wifiServerSpiffs: false,
 
@@ -128,6 +128,29 @@ export default {
 				return true;
 			}
 			return false;
+		},
+		getFirmwareName(fileName) {
+			let result = null;
+			this.boards.forEach((board, index) => {
+				if (board && board.firmwareFileName && (board.canAddress || index === 0)) {
+					const regEx = new RegExp(board.firmwareFileName.replace(/\.bin$/, '(.*)\\.bin'), 'i');
+					if (regEx.test(fileName)) {
+						result = board.firmwareFileName;
+						this.updates.firmwareBoards.push(board.canAddress || 0);
+					}
+				}
+			}, this);
+			return result;
+		},
+		getBinaryName(key, fileName) {
+			return this.boards.find(board => {
+				if (board && board[key]) {
+					const regEx = new RegExp(board[key].replace(/\.bin$/, '(.*)\\.bin'), 'i');
+					if (regEx.test(fileName)) {
+						return board[key];
+					}
+				}
+			});
 		},
 		async doUpload(files, zipName, startTime) {
 			if (!files.length) {
@@ -181,26 +204,9 @@ export default {
 			}
 
 			this.updates.webInterface = false;
-			this.updates.firmware = false;
+			this.updates.firmwareBoards = [];
 			this.updates.wifiServer = false;
 			this.updates.wifiServerSpiffs = false;
-
-			let firmwareFileName, iapSBCFileName, iapSDFileName;
-			let firmwareFileRegEx = /\*/, iapSBCFileRegEx = /\*/, iapSDFileRegEx = /\*/;
-			if (this.boards.length > 0) {
-				firmwareFileName = this.boards[0].firmwareFileName;
-				if (firmwareFileName) {
-					firmwareFileRegEx = new RegExp(firmwareFileName.replace(/\.bin$/, '(.*)\\.bin'), 'i');
-				}
-				iapSBCFileName = this.boards[0].iapFileNameSBC;
-				if (iapSBCFileName) {
-					iapSBCFileRegEx = new RegExp(iapSBCFileName.replace(/\.bin$/, '(.*)\\.bin'), 'i');
-				}
-				iapSDFileName = this.boards[0].iapFileNameSD;
-				if (iapSDFileName) {
-					iapSDFileRegEx = new RegExp(iapSDFileName.replace(/\.bin$/, '(.*)\\.bin'), 'i');
-				}
-			}
 
 			let success = true;
 			this.uploading = true;
@@ -209,26 +215,36 @@ export default {
 
 				// Adjust filename if an update is being uploaded
 				let filename = Path.combine(this.destinationDirectory, content.name);
-				if (this.target === 'system' || this.target === 'update') {
+				if (this.target === 'system' || this.target === 'firmware') {
 					if (Path.isSdPath(content.name)) {
 						filename = Path.combine('0:/', content.name);
 					} else if (this.isWebFile(content.name)) {
 						filename = Path.combine(this.directories.web, content.name);
 						this.updates.webInterface |= /index.html(\.gz)?/i.test(content.name);
-					} else if (firmwareFileRegEx.test(content.name)) {
-						filename = Path.combine(Path.system, firmwareFileName);
-						this.updates.firmware = true;
-					} else if (this.state.dsfVersion && iapSBCFileRegEx.test(content.name)) {
-						filename = Path.combine(Path.system, iapSBCFileName);
-					} else if (iapSDFileRegEx.test(content.name)) {
-						filename = Path.combine(Path.system, iapSDFileName);
-					} else if (!this.state.dsfVersion && this.network.interfaces.some(iface => iface.type === NetworkInterfaceType.wifi)) {
-						if ((/DuetWiFiSocketServer(.*)\.bin/i.test(content.name) || /DuetWiFiServer(.*)\.bin/i.test(content.name))) {
-							filename = Path.combine(Path.system, 'DuetWiFiServer.bin');
-							this.updates.wifiServer = true;
-						} else if (/DuetWebControl(.*)\.bin/i.test(content.name)) {
-							filename = Path.combine(Path.system, 'DuetWebControl.bin');
-							this.updates.wifiServerSpiffs = true;
+					} else {
+						const firmwareFileName = this.getFirmwareName(content.name);
+						const bootloaderFileName = this.getBinaryName('bootloaderFileName', content.name);
+						const iapFileNameSBC = this.getBinaryName('iapFileNameSBC', content.name);
+						const iapFileNameSD = this.getBinaryName('iapFileNameSD', content.name);
+						if (firmwareFileName) {
+							filename = Path.combine(this.directories.firmware, firmwareFileName);
+						} else if (bootloaderFileName) {
+							filename = Path.combine(this.directories.firmware, bootloaderFileName);
+						} else if (this.state.dsfVersion && iapFileNameSBC) {
+							filename = Path.combine(this.directories.firmware, iapFileNameSBC);
+						} else if (iapFileNameSD) {
+							filename = Path.combine(this.directories.firmware, iapFileNameSD);
+						} else if (!this.state.dsfVersion && this.network.interfaces.some(iface => iface.type === NetworkInterfaceType.wifi)) {
+							if ((/DuetWiFiSocketServer(.*)\.bin/i.test(content.name) || /DuetWiFiServer(.*)\.bin/i.test(content.name))) {
+								filename = Path.combine(this.directories.firmware, 'DuetWiFiServer.bin');
+								this.updates.wifiServer = true;
+							} else if (/DuetWebControl(.*)\.bin/i.test(content.name)) {
+								filename = Path.combine(this.directories.firmware, 'DuetWebControl.bin');
+								this.updates.wifiServerSpiffs = true;
+							}
+						} else if (content.name.endsWith('.bin')) {
+							// FIXME This will be no longer needed when CAN board enumeration is supported
+							filename = Path.combine(this.directories.firmware, content.name);
 						}
 					}
 				}
@@ -256,7 +272,7 @@ export default {
 			if (success) {
 				this.$emit('uploadComplete', files);
 
-				if (this.updates.firmware || this.updates.wifiServer || this.updates.wifiServerSpiffs) {
+				if ((this.updates.firmwareBoards.length > 0) || this.updates.wifiServer || this.updates.wifiServerSpiffs) {
 					// Ask user to perform an update
 					this.confirmUpdate = true;
 				} else if (!this.isLocal && this.updates.webInterface) {
@@ -272,9 +288,20 @@ export default {
 			}
 		},
 		async startUpdate() {
-			// Start firmware update
+			// Update expansion boards
+			let code = '';
+			this.updates.firmwareBoards.forEach(boardToUpdate => {
+				if (boardToUpdate > 0) {
+					if (code !== '') {
+						code += '\n';
+					}
+					code += `M997 B${boardToUpdate}`;
+				}
+			});
+
+			// Update other modules
 			let modules = [];
-			if (this.updates.firmware) {
+			if (this.updates.firmwareBoards.indexOf(0) >= 0) {
 				modules.push('0');
 			}
 			if (this.updates.wifiServer) {
@@ -286,7 +313,11 @@ export default {
 
 			this.updates.codeSent = true;
 			try {
-				await this.sendCode(`M997 S${modules.join(':')}`);
+				if (code !== '') {
+					code += '\n';
+				}
+				code += `M997 S${modules.join(':')}`;
+				await this.sendCode(code);
 			} catch (e) {
 				if (!(e instanceof DisconnectedError)) {
 					console.warn(e);

@@ -7,6 +7,11 @@
 
 			<v-card-text>
 				<v-progress-linear :indeterminate="connectingProgress < 0" :value="connectingProgress" color="white" class="mb-0"></v-progress-linear>
+				<center>
+					<code-btn v-show="displayReset" class="mt-5" code="M999" :log="false" color="warning" :title="$t('button.reset.title')">
+						<v-icon class="mr-1">mdi-refresh</v-icon> {{ $t('button.reset.caption') }}
+					</code-btn>
+				</center>
 			</v-card-text>
 		</v-card>
 	</v-overlay>
@@ -16,6 +21,8 @@
 'use strict'
 
 import { mapState } from 'vuex'
+
+import { StatusType } from '../../store/machine/modelEnums.js'
 
 export default {
 	computed: {
@@ -28,8 +35,11 @@ export default {
 			if (this.isConnecting || this.connectingProgress >= 0) {
 				return this.$t('dialog.connection.connecting');
 			}
+			if (this.status === StatusType.updating) {
+				return this.$t('dialog.connection.updating');
+			}
 			if (this.isReconnecting) {
-				return this.$t((this.status === 'updating') ? 'dialog.connection.updating' : 'dialog.connection.reconnecting');
+				return this.$t('dialog.connection.reconnecting');
 			}
 			if (this.isDisconnecting) {
 				return this.$t('dialog.connection.disconnecting');
@@ -37,7 +47,33 @@ export default {
 			return this.$t('dialog.connection.standBy');
 		},
 		shown() {
-			return this.isConnecting || this.connectingProgress >= 0 || this.isReconnecting || this.isDisconnecting;
+			return (this.isConnecting || this.connectingProgress >= 0 || this.isReconnecting || this.isDisconnecting ||
+					this.status === StatusType.halted || this.status === StatusType.updating);
+		}
+	},
+	data() {
+		return {
+			displayReset: false,
+			haltedTimer: null
+		}
+	},
+	methods: {
+		showResetButton() {
+			this.haltedTimer = null;
+			this.displayReset = true;
+		}
+	},
+	watch: {
+		status(to) {
+			if (to === StatusType.halted) {
+				this.haltedTimer = setTimeout(this.showResetButton.bind(this), 4000);
+			} else {
+				if (this.haltedTimer) {
+					clearTimeout(this.haltedTimer);
+					this.haltedTimer = null;
+				}
+				this.displayReset = false;
+			}
 		}
 	}
 }

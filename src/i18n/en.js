@@ -1,39 +1,55 @@
 export default {
 	language: 'English',
 	'$vuetify': {
+		badge: 'Badge',
 		close: 'Close',
 		dataIterator: {
-			pageText: '{0}-{1} of {2}',
 			noResultsText: 'No matching records found',
-			loadingText: 'Loading items...'
+			loadingText: 'Loading items...',
 		},
 		dataTable: {
 			itemsPerPageText: 'Rows per page:',
 			ariaLabel: {
-				sortDescending: ': Sorted descending. Activate to remove sorting.',
-				sortAscending: ': Sorted ascending. Activate to sort descending.',
-				sortNone: ': Not sorted. Activate to sort ascending.'
+				sortDescending: 'Sorted descending.',
+				sortAscending: 'Sorted ascending.',
+				sortNone: 'Not sorted.',
+				activateNone: 'Activate to remove sorting.',
+				activateDescending: 'Activate to sort descending.',
+				activateAscending: 'Activate to sort ascending.',
 			},
+			sortBy: 'Sort by',
 		},
 		dataFooter: {
-			itemsPerPageText: 'Items perweb:',
+			itemsPerPageText: 'Items per page:',
 			itemsPerPageAll: 'All',
 			nextPage: 'Next page',
 			prevPage: 'Previous page',
 			firstPage: 'First page',
-			lastPage: 'Last page'
+			lastPage: 'Last page',
+			pageText: '{0}-{1} of {2}',
 		},
 		datePicker: {
-			itemsSelected: '{0} selected'
+			itemsSelected: '{0} selected',
 		},
 		noDataText: 'No data available',
 		carousel: {
 			prev: 'Previous visual',
-			next: 'Next visual'
+			next: 'Next visual',
+			ariaLabel: {
+				delimiter: 'Carousel slide {0} of {1}',
+			},
 		},
 		calendar: {
-			moreEvents: '{0} more'
-		}
+			moreEvents: '{0} more',
+		},
+		fileInput: {
+			counter: '{0} files',
+			counterSize: '{0} files ({1} in total)',
+		},
+		timePicker: {
+			am: 'AM',
+			pm: 'PM',
+		},
 	},
 	button: {
 		add: {
@@ -66,6 +82,10 @@ export default {
 		},
 		refresh: {
 			caption: 'Refresh'
+		},
+		reset: {
+			caption: 'Reset Machine',
+			title: 'Send M999 to the machine to reset it'
 		},
 		upload: {
 			gcodes: {
@@ -429,10 +449,6 @@ export default {
 			successMulti: 'Successfully downloaded {0} files',
 			error: 'Failed to download {0}'
 		},
-		loadingFile: {
-			title: 'Loading file...',
-			message: 'This file is relatively big so it may take a while before it is displayed.'
-		},
 		message: 'Message',
 		mount: {
 			successTitle: 'SD card mounted',
@@ -642,6 +658,7 @@ export default {
 			caption: 'Webcam',
 			webcamURL: 'Webcam URL (optional)',
 			webcamUpdateInterval: 'Webcam update interval ({0})',
+			webcamLiveURL: 'URL to open when Webcam image is clicked (optional)',
 			webcamFix: 'Do not append extra HTTP qualifier when reloading images',
 			webcamEmbedded: 'Embed webcam image in an iframe',
 			webcamRotation: 'Rotate webcam image',
@@ -666,10 +683,9 @@ export default {
 			topSpeed: 'Top Speed',
 			sensors: 'Sensors',
 			mcuTemp: 'MCU Temperature',
-			mcuTempTitle: 'Minimum: {0}, Maximum: {1}',
+			minMax: 'Minimum: {0}, Maximum {1}',
 			vIn: 'Vin',
 			v12: 'V12',
-			minMax: 'Minimum: {0}, Maximum {1}',
 			fanRPM: 'Fan RPM',
 			probe: 'Z-Probe|Z-Probes',
 			noStatus: 'No Status'
