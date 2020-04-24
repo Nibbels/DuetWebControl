@@ -8,7 +8,7 @@ let store
 
 export function display(value, precision, unit) {
 	if (isNumber(value)) {
-		return value.toFixed((precision !== undefined) ? precision : 2) + (unit ? (' ' + unit) : '');
+		return value.toFixed((precision !== undefined) ? precision : 4) + (unit ? (' ' + unit) : '');
 	}
 	if (value instanceof Array && value.length > 0) {
 		return value.map(item => (item !== undefined) ? item.toFixed((precision !== undefined) ? precision : 0) + (unit ? (' ' + unit) : '')
@@ -18,7 +18,7 @@ export function display(value, precision, unit) {
 }
 
 export function displayZ(value, showUnit = true) {
-	return display(value, (store.state.machine.model.state.machineMode === MachineMode.cnc) ? 3 : 2, showUnit ? 'mm' : undefined);
+	return display(value, (store.state.machine.model.state.machineMode === MachineMode.cnc) ? 3 : 3, showUnit ? 'mm' : undefined);
 }
 
 export function displaySize(bytes) {
