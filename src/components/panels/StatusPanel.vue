@@ -67,7 +67,9 @@
                         </v-row>
                     </v-col>
                 </v-row>
-                <v-divider v-show="move.axes.length" class="my-2"></v-divider>
+
+                <v-divider class="my-2"></v-divider>
+
                 <v-row no-gutters class="flex-nowrap">
                     <v-col tag="strong" class="category-header">
                         <a href="javascript:void(0)">
@@ -89,12 +91,54 @@
                         </v-row>
                     </v-col>
                 </v-row>
+
+                <v-divider class="my-2"></v-divider>
+
+                <v-row>
+                    <v-col tag="strong" class="category-header">
+                        <a href="javascript:void(0)">
+                            Misc
+                        </a>
+                    </v-col>
+                    <v-col class="d-flex flex-column align-center">
+                        <strong>
+                            workspace Number
+                        </strong>
+                        <span>
+                            {{ move.workspaceNumber ? move.workspaceNumber : 'n/a' }}
+                        </span>
+                    </v-col>
+                    <v-col class="d-flex flex-column align-center">
+                        <strong>
+                            current Tool
+                        </strong>
+                        <span>
+                            {{ isNumber(state.currentTool) ? state.currentTool : 'n/a' }}
+                        </span>
+                    </v-col>
+                    <v-col class="d-flex flex-column align-center">
+                        <strong>
+                            next Tool
+                        </strong>
+                        <span>
+                            {{ isNumber(state.nextTool) ? state.nextTool : 'n/a' }}
+                        </span>
+                    </v-col>
+                    <v-col class="d-flex flex-column align-center">
+                        <strong>
+                            previous Tool
+                        </strong>
+                        <span>
+                            {{ isNumber(state.previousTool) ? state.previousTool : 'n/a' }}
+                        </span>
+                    </v-col>
+                </v-row>
             </template>
 
 
             <!-- Axis Positions -->
-            <template v-if="isNumber(move.compensation.fadeHeight)">
-                <v-divider v-show="move.axes.length" class="my-2"></v-divider>
+            <template v-if="move.compensation">
+                <v-divider v-show="move.compensation" class="my-2"></v-divider>
 
                 <v-row no-gutters class="flex-nowrap">
                     <v-col tag="strong" class="category-header">
@@ -108,24 +152,39 @@
                                     fadeHeight
                                 </strong>
                                 <span>
-									{{ move.compensation.fadeHeight }}
+									{{ move.compensation.fadeHeight ? move.compensation.fadeHeight : 'n/a' }}
 								</span>
                             </v-col>
                         </v-row>
                     </v-col>
 
-                    <v-col v-for="(key, index) in move.compensation.meshDeviation" :key="index">
+                    <template v-if="move.compensation.meshDeviation">
+                        <v-col v-for="(key, index) in move.compensation.meshDeviation" :key="index">
+                            <v-row align-content="center" no-gutters>
+                                <v-col class="d-flex flex-column align-center">
+                                    <strong>
+                                        {{ index }}
+                                    </strong>
+                                    <span>
+                                        {{key}}
+                                    </span>
+                                </v-col>
+                            </v-row>
+                        </v-col>
+                    </template>
+                    <template v-else>
                         <v-row align-content="center" no-gutters>
                             <v-col class="d-flex flex-column align-center">
                                 <strong>
-                                    {{ index }}
+                                    meshDeviation
                                 </strong>
                                 <span>
-                                    {{key}}
+                                    n/a
 								</span>
                             </v-col>
                         </v-row>
-                    </v-col>
+                    </template>
+
 
                     <v-col>
                         <v-row align-content="center" no-gutters>
@@ -134,7 +193,19 @@
                                     file
                                 </strong>
                                 <span>
-									{{ move.compensation.file.substr(7) }}
+									{{ move.compensation.file ? move.compensation.file.substr(7) : 'n/a' }}
+								</span>
+                            </v-col>
+                        </v-row>
+                    </v-col>
+                    <v-col>
+                        <v-row align-content="center" no-gutters>
+                            <v-col class="d-flex flex-column align-center">
+                                <strong>
+                                    type
+                                </strong>
+                                <span>
+									{{ move.compensation.type ? move.compensation.type : 'n/a' }}
 								</span>
                             </v-col>
                         </v-row>
@@ -145,7 +216,7 @@
 
             <!-- Extruders -->
             <template v-if="move.extruders.length">
-                <v-divider v-show="move.axes.length" class="my-2"></v-divider>
+                <v-divider v-show="move.extruders.length" class="my-2"></v-divider>
 
                 <v-row align-content="center" no-gutters class="flex-nowrap">
                     <v-col tag="strong" class="category-header">
@@ -324,7 +395,8 @@
                 move: state => state.move,
                 machineMode: state => state.state.machineMode,
                 sensors: state => state.sensors,
-                status: state => state.state.status
+                status: state => state.state.status,
+                state: state => state
             }),
             ...mapGetters(['isConnected']),
             fanRPM() {
