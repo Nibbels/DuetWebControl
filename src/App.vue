@@ -82,24 +82,16 @@ textarea {
 			<v-app-bar-nav-icon @click.stop="drawer = !drawer">
 				<v-icon>mdi-menu</v-icon>
 			</v-app-bar-nav-icon>
-			<v-toolbar-title>
-				<!-- TODO: Optional OEM branding -->
-				<a href="javascript:void(0)" id="title">{{ name }}</a>
-			</v-toolbar-title>
-			<connect-btn v-if="isLocal" class="hidden-xs-only"></connect-btn>
 
-			<v-spacer></v-spacer>
+			<v-toolbar-title class="mr-3" style="color: #76ff03">
+				Nibbels Bugchanger
+			</v-toolbar-title>
 
 			<code-input class="mx-3 hidden-sm-and-down"></code-input>
 
-			<v-spacer></v-spacer>
+			<connect-btn v-if="isLocal" class="mx-3 hidden-xs-only"></connect-btn>
 
-			<upload-btn target="start" class="mr-3 hidden-sm-and-down"></upload-btn>
-			<emergency-btn class="hidden-xs-only"></emergency-btn>
-
-			<v-btn icon class="hidden-md-and-up ml-3" :class="toggleGlobalContainerColor" @click="hideGlobalContainer = !hideGlobalContainer">
-				<v-icon>mdi-aspect-ratio</v-icon>
-			</v-btn>
+			<emergency-btn class="hidden-xs-only ml-3"></emergency-btn>
 		</v-app-bar>
 
 		<v-content id="content">
