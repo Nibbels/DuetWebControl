@@ -99,8 +99,11 @@ export class MachineModel {
 		heaters: null,
 		heatersPerTool: null,
 		monitorsPerHeater: null,
+		restorePoints: null,
 		sensors: null,
 		spindles: null,
+		tools: null,
+		trackedObjects: null,
 		triggers: null,
 		volumes: null,
 		workplaces: null,
@@ -138,6 +141,7 @@ export class MachineModel {
 		currentMove: {
 			acceleration: 0,
 			deceleration: 0,
+			laserPwm: null,
 			requestedSpeed: 0,
 			topSpeed: 0
 		},
